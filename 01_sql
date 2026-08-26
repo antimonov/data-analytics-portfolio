@@ -1,0 +1,6 @@
+SELECT DISTINCT region,
+ COUNT(*) AS count_donors
+FROM donorsearch.user_anon_data
+GROUP BY region
+ORDER BY count_donors DESC
+LIMIT 10
