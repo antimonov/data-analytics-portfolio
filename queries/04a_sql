@@ -1,0 +1,14 @@
+WITH bonus_donors AS (
+	SELECT DISTINCT user_id
+	FROM donorsearch.user_anon_bonus
+),
+donations_in_period AS (
+	SELECT da.user_id,
+	COUNT(*) FILTER (WHERE da.donation_date < '01-01-2020' ) AS donations_before,
+	COUNT(*) FILTER (WHERE da.donation_date >= '01-01-2020') AS donations_after
+	FROM donorsearch.donation_anon AS da
+	GROUP BY da.user_id)
+SELECT 
+    ROUND(AVG(donations_before)::numeric, 2) AS avg_donations_before,
+    ROUND(AVG(donations_after)::numeric, 2) AS avg_donations_after
+FROM donations_in_period
