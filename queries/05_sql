@@ -1,0 +1,19 @@
+SELECT 
+	CASE WHEN autho_vk IS TRUE THEN 'Вконтакте'
+	WHEN autho_ok IS TRUE THEN 'Oдноклассники' 
+	WHEN autho_tg IS TRUE THEN 'Telegram'
+	WHEN autho_yandex IS TRUE THEN 'Яндекс'
+	WHEN autho_google IS TRUE THEN 'Google'
+	ELSE 'без социальной сети'
+	END AS social_media,
+	COUNT(id) AS donors_by_channel,
+	ROUND(AVG(confirmed_donations) :: NUMERIC, 2) AS avg_donations_per_channel
+FROM donorsearch.user_anon_data 
+GROUP BY CASE WHEN autho_vk IS TRUE THEN 'Вконтакте'
+	WHEN autho_ok IS TRUE THEN 'Oдноклассники' 
+	WHEN autho_tg IS TRUE THEN 'Telegram'
+	WHEN autho_yandex IS TRUE THEN 'Яндекс'
+	WHEN autho_google IS TRUE THEN 'Google'
+	ELSE 'без социальной сети'
+	END 
+ORDER BY donors_by_channel DESC
