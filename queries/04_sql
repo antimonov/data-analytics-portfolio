@@ -3,17 +3,11 @@ WITH bonus_group AS (
 	CASE WHEN count_bonuses_taken > 0 THEN 'с бонусами'
 	ELSE 'без бонусов'
 	END AS donor_bonus_group
-FROM donorsearch.user_anon_data
-),
-donor_activity AS (
-	SELECT u.id,
-		u.confirmed_donations,
-		COALESCE(uab.user_bonus_count, 0) AS user_bonus_count
-	FROM donorsearch.user_anon_data AS u
-	LEFT JOIN donorsearch.user_anon_bonus AS uab ON u.id = uab.user_id)
+	FROM donorsearch.user_anon_data
+)
 SELECT bg.donor_bonus_group,
-	COUNT(da.id) AS count_donors,
-	ROUND(AVG(da.confirmed_donations) :: NUMERIC, 2) AS avg_donations_per_donor
+	COUNT(DISTINCT u.id) AS count_donors,
+	ROUND(AVG(u.confirmed_donations) :: NUMERIC, 2) AS avg_donations_per_donor
 FROM bonus_group AS bg
-LEFT JOIN donor_activity AS da ON bg.id = da.id
+JOIN donorsearch.user_anon_data AS u ON bg.id = u.id
 GROUP BY bg.donor_bonus_group
