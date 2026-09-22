@@ -1,0 +1,21 @@
+WITH bonus_donors AS (
+ SELECT id
+ FROM donorsearch.user_anon_data
+ WHERE count_bonuses_taken > 0
+),
+first_donation AS (
+ SELECT d.user_id,
+  MIN(d.donation_date) AS first_donation_date
+ FROM donorsearch.donation_anon AS d
+ WHERE d.user_id IN (SELECT id FROM bonus_donors)
+ GROUP BY d.user_id
+),
+after_2020_donations AS (
+ SELECT fd.user_id AS after_2020_first_donation
+ FROM first_donation AS fd
+ WHERE first_donation_date >= '01-01-2020'
+)
+SELECT 
+ (SELECT COUNT(a2020d.after_2020_first_donation) AS count_after_2020_first FROM after_2020_donations AS a2020d),
+ COUNT(*) AS total_bonus_donors
+FROM bonus_donors AS bd
