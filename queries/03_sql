@@ -1,5 +1,0 @@
-SELECT id,
-	confirmed_donations
-FROM donorsearch.user_anon_data
-ORDER BY confirmed_donations DESC
-LIMIT 10
