@@ -1,0 +1,7 @@
+SELECT DATE_TRUNC('month', donation_date) AS dt_month,
+COUNT(*) AS donation_count
+FROM donorsearch.donation_anon
+WHERE donation_date >= '01-01-2022' 
+AND donation_date < '01-01-2024'
+GROUP BY DATE_TRUNC('month', donation_date)
+ORDER BY dt_month
