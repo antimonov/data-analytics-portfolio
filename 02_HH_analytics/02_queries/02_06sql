@@ -1,0 +1,4 @@
+SELECT  schedule, employment, COUNT(id)
+FROM public.parcing_table
+GROUP BY schedule, employment
+ORDER BY COUNT(id) DESC
