@@ -1,0 +1,10 @@
+SELECT employer,
+employment,
+schedule,
+ROUND(AVG(salary_from::numeric)) AS avg_min_salary,
+ROUND(AVG(salary_to::numeric)) AS avg_max_salary,
+COUNT(*) AS vac_count
+FROM public.parcing_table
+GROUP BY employer, employment, schedule
+ORDER BY vac_count DESC
+LIMIT 10
