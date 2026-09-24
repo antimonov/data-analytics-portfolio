@@ -1,0 +1,10 @@
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary_from) AS медиана_от,
+MIN(salary_from) AS мин_от,
+MAX(salary_from) AS макс_от,
+ROUND(AVG(salary_from),2) AS сред_от,
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary_to) AS медиана_до,
+MIN(salary_to) AS мин_до,
+MAX(salary_to) AS макс_до,
+ROUND(AVG(salary_to),2) AS сред_до
+FROM public.parcing_table
+WHERE salary_from > 10000 -- фильтр чтобы отбросить выбросы с ошибками 
