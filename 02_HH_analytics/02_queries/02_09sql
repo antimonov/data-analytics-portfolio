@@ -1,0 +1,8 @@
+SELECT experience,
+soft_skills_1,
+COUNT (*) AS skill_count
+FROM public.parcing_table
+GROUP BY experience,
+soft_skills_1
+HAVING soft_skills_1 IS NOT NULL AND soft_skills_1 <> '' AND COUNT(*) > 2
+ORDER BY experience, skill_count DESC
