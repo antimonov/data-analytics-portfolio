@@ -1,0 +1,5 @@
+SELECT DISTINCT area, COUNT(id)
+FROM public.parcing_table
+GROUP BY area 
+ORDER BY COUNT(id) DESC
+LIMIT 10
