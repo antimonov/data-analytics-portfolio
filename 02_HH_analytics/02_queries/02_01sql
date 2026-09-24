@@ -1,0 +1,8 @@
+SELECT MIN(salary_from) AS min_min_salary,
+MAX(salary_from) AS max_min_salary,
+ROUND(AVG(salary_from),2) AS avg_min_salary,
+MIN(salary_to) AS min_max_salary,
+MAX(salary_to) AS max_max_salary,
+ROUND(AVG(salary_to),2) AS avg_max_salary
+FROM public.parcing_table
+WHERE salary_from > 10000 
