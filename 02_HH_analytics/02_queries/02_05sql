@@ -1,0 +1,10 @@
+SELECT  
+CASE 
+ WHEN name ILIKE '%системн%' OR name ILIKE '%system%' THEN 'Системный аналитик'
+ ELSE 'Аналитик данных'
+END AS type_name,
+experience,
+COUNT(id)
+FROM public.parcing_table
+GROUP BY type_name, experience 
+ORDER BY COUNT(id) DESC
