@@ -1,0 +1,6 @@
+SELECT area, employer, COUNT(id)
+FROM public.parcing_table
+WHERE area != 'Москва' AND area != 'Санкт-Петербург'
+GROUP BY area, employer
+ORDER BY COUNT(id) DESC
+LIMIT 15
