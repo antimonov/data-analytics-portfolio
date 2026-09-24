@@ -56,4 +56,5 @@ SQL: PostgreSQL, агрегация, JOIN, CTE, подзапросы, оконн
 ### Контакты
 
 [Telegram](https://t.me/culpable_relaxation12)
+
 [Email](andrewantimonoff@yandex.ru)
