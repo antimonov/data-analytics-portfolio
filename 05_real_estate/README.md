@@ -26,6 +26,10 @@
 
 ![Результат](05_results/05_estate1.png)
 
+![Результат](05_results/05_estate1a.png)
+
+![Результат](05_results/05_estate1b.png)
+
 
 
 ## Сезонность объявлений
