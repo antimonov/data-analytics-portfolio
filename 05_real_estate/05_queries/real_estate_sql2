@@ -1,0 +1,62 @@
+WITH limits AS (
+    SELECT
+        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY total_area) AS total_area_limit,
+        PERCENTILE_DISC(0.99) WITHIN GROUP (ORDER BY rooms) AS rooms_limit,
+        PERCENTILE_DISC(0.99) WITHIN GROUP (ORDER BY balcony) AS balcony_limit,
+        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ceiling_height) AS ceiling_height_limit_h,
+        PERCENTILE_CONT(0.01) WITHIN GROUP (ORDER BY ceiling_height) AS ceiling_height_limit_l
+    FROM real_estate.flats
+),
+-- Найдём id объявлений, которые не содержат выбросы:
+filtered_id AS(
+    SELECT id
+    FROM real_estate.flats
+    WHERE
+        total_area < (SELECT total_area_limit FROM limits)
+        AND (rooms < (SELECT rooms_limit FROM limits) OR rooms IS NULL)
+        AND (balcony < (SELECT balcony_limit FROM limits) OR balcony IS NULL)
+        AND ((ceiling_height < (SELECT ceiling_height_limit_h FROM limits)
+            AND ceiling_height > (SELECT ceiling_height_limit_l FROM limits)) OR ceiling_height IS NULL)
+    ),
+    date_extract AS (
+    	SELECT f.id,
+    	a.last_price,
+    	fl.total_area,
+    	ROUND((a.last_price / fl.total_area)::NUMERIC, 2) AS price_per_m2,
+    	DATE_TRUNC('month', a.first_day_exposition) AS month_start,
+    	DATE_TRUNC('month', a.first_day_exposition + a.days_exposition * INTERVAL '1 day') AS month_finish
+    	FROM filtered_id AS f
+   	 	INNER JOIN real_estate.advertisement AS a ON a.id = f.id
+   	 	INNER JOIN real_estate.flats AS fl ON fl.id = f.id
+    	LEFT JOIN real_estate."type" AS t ON t.type_id = fl.type_id
+   		 WHERE t."type" = 'город'
+    ),
+  	 pub_month AS (
+    	SELECT EXTRACT(MONTH FROM de.month_start)::INT AS month_num,
+    	COUNT(de.id) AS id_count_start,
+    	ROUND(AVG(de.total_area)::NUMERIC, 2) AS avg_area_start,
+    	ROUND(AVG(de.price_per_m2)::NUMERIC, 2) AS avg_price_m2_start
+   		 FROM date_extract AS de
+    	WHERE EXTRACT(YEAR FROM month_start) BETWEEN 2015 AND 2018
+    GROUP BY EXTRACT(MONTH FROM de.month_start)::INT 
+    ),
+    off_month AS (
+    	SELECT EXTRACT(MONTH FROM de.month_finish)::INT AS month_num,
+    	COUNT(de.id) AS id_count_finish,
+    	ROUND(AVG(de.total_area)::NUMERIC, 2) AS avg_area_finish,
+    	ROUND(AVG(de.price_per_m2)::NUMERIC, 2) AS avg_price_m2_finish
+   	 FROM date_extract AS de
+    	WHERE EXTRACT(YEAR FROM month_finish) BETWEEN 2015 AND 2018
+    	AND EXTRACT(MONTH FROM de.month_finish)::INT IS NOT NULL
+    	GROUP BY EXTRACT(MONTH FROM de.month_finish)::INT
+    )
+    SELECT COALESCE(pm.month_num, om.month_num) AS "месяц публикации",
+    COALESCE(pm.id_count_start, 0)    AS "всего опубликовано",
+    pm.avg_area_start AS "Публ: средняя площадь",
+    pm.avg_price_m2_start AS "Публ: средняя цена за м2",
+    COALESCE(om.id_count_finish, 0)   AS "всего снято",
+    om.avg_area_finish AS "Снято: средняя площадь",
+    om.avg_price_m2_finish AS "Снято: средняя цена за м2"
+    FROM pub_month AS pm
+    FULL JOIN off_month AS om ON om.month_num = pm.month_num
+    ORDER BY COALESCE(om.id_count_finish, 0) DESC;
