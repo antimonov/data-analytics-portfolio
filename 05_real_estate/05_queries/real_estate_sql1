@@ -1,0 +1,70 @@
+-- Определим аномальные значения (выбросы) по значению перцентилей:
+WITH limits AS (
+    SELECT
+        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY total_area) AS total_area_limit,
+        PERCENTILE_DISC(0.99) WITHIN GROUP (ORDER BY rooms) AS rooms_limit,
+        PERCENTILE_DISC(0.99) WITHIN GROUP (ORDER BY balcony) AS balcony_limit,
+        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ceiling_height) AS ceiling_height_limit_h,
+        PERCENTILE_CONT(0.01) WITHIN GROUP (ORDER BY ceiling_height) AS ceiling_height_limit_l
+    FROM real_estate.flats
+),
+-- Найдём id объявлений, которые не содержат выбросы:
+filtered_id AS(
+    SELECT id
+    FROM real_estate.flats
+    WHERE
+        total_area < (SELECT total_area_limit FROM limits)
+        AND (rooms < (SELECT rooms_limit FROM limits) OR rooms IS NULL)
+        AND (balcony < (SELECT balcony_limit FROM limits) OR balcony IS NULL)
+        AND ((ceiling_height < (SELECT ceiling_height_limit_h FROM limits)
+            AND ceiling_height > (SELECT ceiling_height_limit_l FROM limits)) OR ceiling_height IS NULL)
+    ),
+   categories AS (
+   SELECT CASE
+     WHEN c.city = 'Санкт-Петербург' THEN 'Санкт-Петербург'
+     ELSE 'ЛенОбл'
+   END AS city_category,
+   CASE 
+     WHEN a.days_exposition <= 30 THEN 'до 1 месяца'
+     WHEN a.days_exposition > 30 AND a.days_exposition <= 90 THEN 'до 3 месяцев'
+     WHEN a.days_exposition > 90 AND a.days_exposition <= 180 THEN 'до полугода'
+     WHEN a.days_exposition > 180 THEN 'более полугода'
+     ELSE 'non category'
+   END AS ads_category,
+   f.id,
+   a.last_price,
+   fl.total_area,
+   fl.rooms,
+   fl.ceiling_height,
+   fl.balcony,
+   fl.floor,
+   ROUND((a.last_price / fl.total_area):: numeric, 2) AS price_per_m2
+  FROM filtered_id AS f
+LEFT JOIN real_estate.advertisement AS a ON a.id = f.id
+LEFT JOIN real_estate.flats AS fl ON fl.id = f.id 
+LEFT JOIN real_estate.city AS c ON c.city_id = fl.city_id
+LEFT JOIN real_estate."type" AS t ON t.type_id = fl.type_id
+WHERE t."type" = 'город' AND EXTRACT(YEAR FROM a.first_day_exposition) BETWEEN 2015 AND 2018
+)
+SELECT ct.city_category AS "Город",
+ct.ads_category AS "Сегмент активности",
+COUNT(ct.id) AS "всего объявлений",
+ROUND(COUNT(ct.id) * 100.0 / SUM(COUNT(ct.id)) OVER (PARTITION BY ct.city_category),2) AS "доля по региону %",
+ROUND(COUNT(ct.id) FILTER (WHERE ct.rooms = 0) * 100.0 / COUNT(ct.id), 2) AS "доля студий %",
+ROUND(AVG(ct.price_per_m2)::numeric, 2) AS "средняя цена м2",
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ct.price_per_m2) AS "медианная цена за м2",
+ROUND(AVG(ct.last_price)::numeric, 2) AS "средняя стоимость",
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ct.last_price) AS "медианная стоимость",
+ROUND(AVG(ct.total_area)::numeric, 2) AS "средняя площадь",
+ROUND(AVG(ct.ceiling_height)::numeric, 1) AS "средняя высота потолков",
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ct.rooms) AS "медиана комнат",
+ROUND(AVG(ct.rooms)::NUMERIC, 2) AS "среднее кол-во комнат",
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ct.balcony) AS "медиана балконов",
+ROUND(AVG(ct.balcony)::NUMERIC, 2) AS "среднее кол-во балконов",
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ct.floor) AS "медианный этаж",
+ROUND(AVG(ct.floor)::NUMERIC, 2) AS "средний этаж"
+FROM categories AS ct
+GROUP BY ct.city_category,
+ ct.ads_category 
+ORDER BY ct.city_category,
+ ct.ads_category;
